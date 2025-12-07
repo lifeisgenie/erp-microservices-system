@@ -17,9 +17,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.example.erp.approvalrequest.dto.ApprovalMapper.toDetailResponse;
-import static com.example.erp.approvalrequest.dto.ApprovalMapper.toSummaryResponse;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
