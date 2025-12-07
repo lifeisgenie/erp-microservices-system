@@ -1,11 +1,17 @@
 package com.example.erp.approvalrequest.service;
 
 import approval.ApprovalGrpc;
-import approval.ApprovalOuterClass;
+import approval.ApprovalRequest;
+import approval.ApprovalResponse;
+import approval.Step;
 import com.example.erp.approvalrequest.client.EmployeeClient;
 import com.example.erp.approvalrequest.domain.ApprovalDocument;
 import com.example.erp.approvalrequest.domain.ApprovalRepository;
-import com.example.erp.approvalrequest.dto.*;
+import com.example.erp.approvalrequest.dto.ApprovalCreatedResponse;
+import com.example.erp.approvalrequest.dto.ApprovalCreateRequest;
+import com.example.erp.approvalrequest.dto.ApprovalDetailResponse;
+import com.example.erp.approvalrequest.dto.ApprovalMapper;
+import com.example.erp.approvalrequest.dto.ApprovalSummaryResponse;
 import com.example.erp.approvalrequest.exception.ApprovalNotFoundException;
 import com.example.erp.approvalrequest.exception.InvalidApprovalRequestException;
 import com.example.erp.approvalrequest.sequence.SequenceGeneratorService;
@@ -101,7 +107,9 @@ public class ApprovalRequestService {
         int expected = 1;
         for (ApprovalCreateRequest.StepRequest step : sorted) {
             if (!step.getStep().equals(expected)) {
-                throw new InvalidApprovalRequestException("steps must start from 1 and be continuous. expected=" + expected);
+                throw new InvalidApprovalRequestException(
+                        "steps must start from 1 and be continuous. expected=" + expected
+                );
             }
             expected++;
         }
@@ -112,15 +120,15 @@ public class ApprovalRequestService {
     private void callGrpcRequestApproval(ApprovalDocument doc) {
 
         // ApprovalRequest proto 메시지 구성
-        List<ApprovalOuterClass.Step> protoSteps = doc.getSteps().stream()
-                .map(s -> ApprovalOuterClass.Step.newBuilder()
+        List<Step> protoSteps = doc.getSteps().stream()
+                .map(s -> Step.newBuilder()
                         .setStep(s.getStep())
                         .setApproverId(s.getApproverId())
                         .setStatus(s.getStatus())
                         .build())
                 .toList();
 
-        ApprovalOuterClass.ApprovalRequest request = ApprovalOuterClass.ApprovalRequest.newBuilder()
+        ApprovalRequest request = ApprovalRequest.newBuilder()
                 .setRequestId(doc.getRequestId())
                 .setRequesterId(doc.getRequesterId())
                 .setTitle(doc.getTitle())
@@ -128,8 +136,7 @@ public class ApprovalRequestService {
                 .addAllSteps(protoSteps)
                 .build();
 
-        ApprovalOuterClass.ApprovalResponse response = approvalBlockingStub.requestApproval(request);
-        // response.getStatus() 가 "received" 같은 값일 것. 여기서는 로그 정도만 찍어도 됨.
+        ApprovalResponse response = approvalBlockingStub.requestApproval(request);
         System.out.println("gRPC RequestApproval response: " + response.getStatus());
     }
 
@@ -146,6 +153,6 @@ public class ApprovalRequestService {
     public ApprovalDetailResponse getApproval(Integer requestId) {
         ApprovalDocument doc = approvalRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ApprovalNotFoundException(requestId));
-        return toDetailResponse(doc);
+        return ApprovalMapper.toDetailResponse(doc);
     }
 }
