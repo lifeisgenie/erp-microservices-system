@@ -1,0 +1,5 @@
+ext {
+    springBootVersion = '3.3.5'
+    grpcVersion = '1.62.2'
+    protobufVersion = '3.25.3'
+}
