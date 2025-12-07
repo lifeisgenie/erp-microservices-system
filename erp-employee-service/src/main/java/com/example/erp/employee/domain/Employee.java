@@ -33,4 +33,9 @@ public class Employee {
         this.department = department;
         this.position = position;
     }
+
+    public void updateDepartmentAndPosition(String department, String position) {
+        this.department = department;
+        this.position = position;
+    }
 }
