@@ -7,3 +7,4 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ApprovalCreatedResponse {
     private Integer requestId;
+}
