@@ -40,6 +40,9 @@ dependencies {
 
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // gRPC Spring Boot starter (lognet)
+    implementation 'io.github.lognet:grpc-spring-boot-starter:5.1.5'
 }
 
 tasks.withType(Test).configureEach {
