@@ -1,8 +1,9 @@
-package com.example.erp.approvalrequest.exception;
+package com.example.erp.approvalrequest.dto;
 
-public class ApprovalNotFoundException extends RuntimeException {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-    public ApprovalNotFoundException(Integer requestId) {
-        super("Approval request not found: requestId=" + requestId);
-    }
-}
+@Getter
+@AllArgsConstructor
+public class ApprovalCreatedResponse {
+    private Integer requestId;
