@@ -1,16 +1,10 @@
-ext {
-    springBootVersion = '3.3.5'
-    grpcVersion = '1.62.2'
-    protobufVersion = '3.25.3'
-}
-
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.5'
 }
 
-group = 'com.example'
+group = 'com.example.erp'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -22,14 +16,14 @@ repositories {
 }
 
 dependencies {
-    // Web (REST API)
+    // REST API
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    // JPA
+    // JPA + Hibernate
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    // MySQL Driver
+    // MySQL 드라이버
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // Bean Validation (@Valid)
+    // @Valid 검증
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Lombok (선택)
