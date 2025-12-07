@@ -1,7 +1,8 @@
 package com.example.erp.approvalprocessing.service;
 
 import approval.ApprovalGrpc;
-import approval.ApprovalOuterClass;
+import approval.ApprovalResultRequest;
+import approval.ApprovalResultResponse;
 import com.example.erp.approvalprocessing.domain.PendingApproval;
 import com.example.erp.approvalprocessing.dto.PendingApprovalResponse;
 import com.example.erp.approvalprocessing.dto.ProcessApprovalRequest;
@@ -9,19 +10,16 @@ import com.example.erp.approvalprocessing.exception.PendingApprovalNotFoundExcep
 import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ApprovalProcessingService {
 
     private final ApprovalQueueService approvalQueueService;
     private final ApprovalGrpc.ApprovalBlockingStub approvalRequestBlockingStub;
 
-    @Transactional(readOnly = true)
     public List<PendingApprovalResponse> getPendingApprovals(int approverId) {
         return approvalQueueService.getQueueForApprover(approverId).stream()
                 .map(PendingApprovalResponse::from)
@@ -49,20 +47,19 @@ public class ApprovalProcessingService {
         int stepNumber = targetStep.getStep();
 
         // 3. gRPC로 Approval Request Service에 결과 전달
-        ApprovalOuterClass.ApprovalResultRequest grpcRequest =
-                ApprovalOuterClass.ApprovalResultRequest.newBuilder()
+        ApprovalResultRequest grpcRequest = 
+                ApprovalResultRequest.newBuilder()
                         .setRequestId(requestId)
                         .setStep(stepNumber)
                         .setApproverId(approverId)
-                        .setStatus(status.toLowerCase()) // approved 또는 rejected
+                        .setStatus(status.toLowerCase()) // approved or rejected
                         .build();
 
         try {
-            ApprovalOuterClass.ApprovalResultResponse grpcResponse =
+            ApprovalResultResponse grpcResponse =
                     approvalRequestBlockingStub.returnApprovalResult(grpcRequest);
             System.out.println("ReturnApprovalResult response: " + grpcResponse.getStatus());
         } catch (StatusRuntimeException e) {
-            // TODO: 필요하다면 롤백/재시도 정책 고려
             throw new RuntimeException("Failed to call ReturnApprovalResult via gRPC: " + e.getMessage(), e);
         }
     }
