@@ -1,7 +1,9 @@
 package com.example.erp.approvalprocessing.grpc;
 
 import approval.ApprovalGrpc;
-import approval.ApprovalOuterClass;
+import approval.ApprovalRequest;
+import approval.ApprovalResponse;
+import approval.Step;
 import com.example.erp.approvalprocessing.domain.PendingApproval;
 import com.example.erp.approvalprocessing.service.ApprovalQueueService;
 import io.grpc.stub.StreamObserver;
@@ -17,18 +19,17 @@ public class ApprovalProcessingGrpcService extends ApprovalGrpc.ApprovalImplBase
     private final ApprovalQueueService approvalQueueService;
 
     @Override
-    public void requestApproval(ApprovalOuterClass.ApprovalRequest request,
-                                StreamObserver<ApprovalOuterClass.ApprovalResponse> responseObserver) {
+    public void requestApproval(ApprovalRequest request,
+                                StreamObserver<ApprovalResponse> responseObserver) {
 
-        // 1. steps 중 첫 번째 pending 상태의 approverId 찾기
-        ApprovalOuterClass.Step targetStep = request.getStepsList().stream()
+        // 1. pending 상태인 첫 번째 step 찾기
+        Step targetStep = request.getStepsList().stream()
                 .filter(s -> "pending".equalsIgnoreCase(s.getStatus()))
                 .findFirst()
                 .orElse(null);
 
         if (targetStep == null) {
-            // pending 단계가 없으면 에러 응답
-            ApprovalOuterClass.ApprovalResponse response = ApprovalOuterClass.ApprovalResponse.newBuilder()
+            ApprovalResponse response = ApprovalResponse.newBuilder()
                     .setStatus("no_pending_step")
                     .build();
             responseObserver.onNext(response);
@@ -55,18 +56,15 @@ public class ApprovalProcessingGrpcService extends ApprovalGrpc.ApprovalImplBase
                 steps
         );
 
-        // 3. 인메모리 큐에 저장
+        // 3. 대기열에 enqueue
         approvalQueueService.enqueueForApprover(approverId, pending);
 
         // 4. 응답
-        ApprovalOuterClass.ApprovalResponse response = ApprovalOuterClass.ApprovalResponse.newBuilder()
+        ApprovalResponse response = ApprovalResponse.newBuilder()
                 .setStatus("received")
                 .build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
-
-    // ReturnApprovalResult는 Approval Request Service 쪽에서 gRPC 서버를 구현할 예정이므로,
-    // 이 Processing Service에서는 requestApproval만 서버로 구현한다.
 }
