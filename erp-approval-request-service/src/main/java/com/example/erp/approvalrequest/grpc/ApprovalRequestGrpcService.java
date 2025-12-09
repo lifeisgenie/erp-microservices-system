@@ -1,8 +1,8 @@
 package com.example.erp.approvalrequest.grpc;
 
 import approval.ApprovalGrpc;
-import approval.ApprovalOuterClass.ApprovalResultRequest;
-import approval.ApprovalOuterClass.ApprovalResultResponse;
+import approval.ApprovalResultRequest;
+import approval.ApprovalResultResponse;
 import com.example.erp.approvalrequest.domain.ApprovalDocument;
 import com.example.erp.approvalrequest.domain.ApprovalRepository;
 import io.grpc.stub.StreamObserver;
@@ -29,7 +29,6 @@ public class ApprovalRequestGrpcService extends ApprovalGrpc.ApprovalImplBase {
         String status = request.getStatus().toLowerCase(Locale.ROOT); // "approved" or "rejected"
 
         if (!"approved".equals(status) && !"rejected".equals(status)) {
-            // 잘못된 값 들어오면 바로 에러
             responseObserver.onError(
                     new IllegalArgumentException("status must be 'approved' or 'rejected', but was: " + status)
             );
@@ -79,11 +78,6 @@ public class ApprovalRequestGrpcService extends ApprovalGrpc.ApprovalImplBase {
         // 4. 도메인 객체 업데이트 + 저장
         doc.updateSteps(updatedSteps, finalStatus, now);
         approvalRepository.save(doc);
-
-        // TODO(확장 여지):
-        //  - 다음 pending 단계가 남아있으면 여기서 다시 Processing Service로 RequestApproval() 호출해
-        //    다음 결재자 큐에 넣는 로직 추가 가능
-        //  - finalStatus가 approved/rejected가 되었을 때 Notification Service로 WebSocket 알림 보내기 등
 
         // 5. gRPC 응답
         ApprovalResultResponse response = ApprovalResultResponse.newBuilder()
