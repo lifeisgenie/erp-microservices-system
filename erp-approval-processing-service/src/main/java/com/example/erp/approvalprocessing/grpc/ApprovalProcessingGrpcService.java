@@ -3,16 +3,15 @@ package com.example.erp.approvalprocessing.grpc;
 import approval.ApprovalGrpc;
 import approval.ApprovalRequest;
 import approval.ApprovalResponse;
-import approval.Step;
 import com.example.erp.approvalprocessing.domain.PendingApproval;
 import com.example.erp.approvalprocessing.service.ApprovalQueueService;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
-import org.lognet.springboot.grpc.GRpcService;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@GRpcService
+@Component
 @RequiredArgsConstructor
 public class ApprovalProcessingGrpcService extends ApprovalGrpc.ApprovalImplBase {
 
@@ -22,8 +21,8 @@ public class ApprovalProcessingGrpcService extends ApprovalGrpc.ApprovalImplBase
     public void requestApproval(ApprovalRequest request,
                                 StreamObserver<ApprovalResponse> responseObserver) {
 
-        // 1. pending 상태인 첫 번째 step 찾기
-        Step targetStep = request.getStepsList().stream()
+        // 1. steps 중 첫 번째 pending 상태의 approverId 찾기
+        var targetStep = request.getStepsList().stream()
                 .filter(s -> "pending".equalsIgnoreCase(s.getStatus()))
                 .findFirst()
                 .orElse(null);
@@ -56,7 +55,7 @@ public class ApprovalProcessingGrpcService extends ApprovalGrpc.ApprovalImplBase
                 steps
         );
 
-        // 3. 대기열에 enqueue
+        // 3. 인메모리 큐에 저장
         approvalQueueService.enqueueForApprover(approverId, pending);
 
         // 4. 응답

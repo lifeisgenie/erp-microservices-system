@@ -29,7 +29,9 @@ public class GrpcApprovalRequestClientConfig implements DisposableBean {
     }
 
     @Bean
-    public ApprovalGrpc.ApprovalBlockingStub approvalRequestBlockingStub(ManagedChannel approvalRequestManagedChannel) {
+    public ApprovalGrpc.ApprovalBlockingStub approvalRequestBlockingStub(
+            ManagedChannel approvalRequestManagedChannel
+    ) {
         return ApprovalGrpc.newBlockingStub(approvalRequestManagedChannel);
     }
 
