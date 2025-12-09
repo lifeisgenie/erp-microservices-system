@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package approval;
 
+option java_package = "approval";
+option java_multiple_files = true;
+option java_outer_classname = "ApprovalOuterClass";
+
 // Approval Processing Service와 통신하는 서비스
 service Approval {
   // 결재 요청 정보를 Processing Service로 전달
