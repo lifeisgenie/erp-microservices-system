@@ -8,7 +8,7 @@ WORKDIR /workspace
 # Gradle wrapper 및 설정 파일 복사
 COPY gradlew .
 COPY gradle ./gradle
-COPY build.gradle settings.gradle ./
+COPY build.gradle settings.gradle* ./
 COPY src ./src
 
 RUN chmod +x gradlew && \
