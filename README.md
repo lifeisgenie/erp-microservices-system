@@ -1,35 +1,39 @@
-# ERP Microservices Project
+# ERP Microservices System
 
-본 프로젝트는 다양한 통신 방식(REST, gRPC, WebSocket)과 이종 저장소(MySQL, MongoDB, In-Memory)를 활용해  
-하나의 ERP 시스템처럼 동작하는 마이크로서비스 아키텍처 기반 결재 시스템을 구현하는 것을 목표로 한다.  
-각 서비스는 독립적으로 배포되며, 서로 다른 프로토콜을 사용해 통신한다.
+본 프로젝트는 마이크로서비스 아키텍처(MSA)를 기반으로 구현된 ERP 결재 승인 시스템이다.
+각 서비스는 REST, gRPC, WebSocket 등 서로 다른 통신 방식을 사용하며,
+저장소 또한 MySQL, MongoDB, In-Memory 로 분리하여 실제 기업 ERP의 구조적 특징을 학습하도록 설계되었다.
 
-## 1. 프로젝트 아키텍처 개요
+## 1. 아키텍처 개요
 
-### 서비스 구성
+
+
+### 서비스 목록
+
 | 서비스명 | 주요 기능 | 통신 방식 | 저장소 |
-|----------|-----------|-----------|---------|
+|----------|-----------|-----------|--------|
 | Employee Service | 직원 CRUD | REST | MySQL |
-| Approval Request Service | 결재 요청 생성, 단계 관리 | REST, gRPC Client | MongoDB |
+| Approval Request Service | 결재 요청 생성 및 단계 관리 | REST, gRPC Client | MongoDB |
 | Approval Processing Service | 결재 승인/반려 처리, 대기열 관리 | REST, gRPC Server | In-Memory |
-| Notification Service | 실시간 알림 | WebSocket | 없음 |
+| Notification Service | 실시간 알림 전송 | WebSocket | 없음 |
 
-## 2. 전체 처리 흐름(승인 시나리오)
+## 2. 전체 처리 흐름
 
 1. Requester → Approval Request Service: POST `/approvals`
-2. Request Service는 요청 데이터를 MongoDB에 저장
-3. Request Service → Processing Service(gRPC): `RequestApproval()` 호출
-4. Approver → Processing Service: POST `/process/{approverId}/{requestId}`
-5. Processing Service → Request Service(gRPC): `ReturnApprovalResult()`
-6. 단계 업데이트 후 다음 결재자에게 gRPC 전달(남아 있을 경우)
+2. Request Service는 MongoDB에 저장
+3. Request Service → Processing Service(gRPC): `RequestApproval()`
+4. Approver → Processing Service: 승인/반려 요청
+5. Processing Service → Request Service(gRPC): 결과 전달
+6. 단계가 남아 있으면 다음 Approver로 전달
 7. 모든 단계 승인 시 Notification Service 호출
-8. Notification Service → Requester WebSocket 메시지 전송
+8. Notification Service → Requester(WebSocket) 알림 전송
 
 ## 3. 서비스 상세 설명
 
-### 3.1 Employee Service (REST + MySQL)
+### 3.1 Employee Service
 
 #### 테이블 스키마
+
 ```sql
 CREATE TABLE employees (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -41,26 +45,26 @@ CREATE TABLE employees (
 ```
 
 #### REST API
+
 | Method | URI | 설명 |
-|--------|-----|------|
+|--------|------|------|
 | POST | /employees | 직원 생성 |
 | GET | /employees | 목록 조회 |
 | GET | /employees/{id} | 상세 조회 |
-| PUT | /employees/{id} | 부서/직책 수정 |
+| PUT | /employees/{id} | 수정 |
 | DELETE | /employees/{id} | 삭제 |
 
 ### 3.2 Approval Request Service
 
-#### MongoDB Document
 ```json
 {
   "requestId": 1,
   "requesterId": 1,
-  "title": "Expense Report",
-  "content": "Travel expenses",
+  "title": "출장비 결재 요청",
+  "content": "부산 학회 참석 비용",
   "steps": [
-    { "step": 1, "approverId": 3, "status": "approved" },
-    { "step": 2, "approverId": 7, "status": "pending" }
+    { "step": 1, "approverId": 2, "status": "approved" },
+    { "step": 2, "approverId": 3, "status": "pending" }
   ],
   "finalStatus": "in_progress"
 }
@@ -68,15 +72,14 @@ CREATE TABLE employees (
 
 ### 3.3 Approval Processing Service
 
-#### In-Memory 구조
 ```json
 {
-  "7": [
+  "2": [
     {
       "requestId": 1,
       "steps": [
-        { "step": 1, "approverId": 3, "status": "approved" },
-        { "step": 2, "approverId": 7, "status": "pending" }
+        { "step": 1, "approverId": 2, "status": "approved" },
+        { "step": 2, "approverId": 3, "status": "pending" }
       ]
     }
   ]
@@ -86,30 +89,31 @@ CREATE TABLE employees (
 ### 3.4 Notification Service
 
 WebSocket 접속:
+
 ```
-ws://{host}:8080/ws?id={employeeId}
+ws://{host}:8084/ws?id={employeeId}
 ```
 
 승인 메시지:
+
 ```json
 {
   "requestId": 1,
-  "result": "approved",
-  "finalResult": "approved"
+  "finalStatus": "approved"
 }
 ```
 
 반려 메시지:
+
 ```json
 {
   "requestId": 1,
-  "result": "rejected",
-  "rejectedBy": 7,
-  "finalResult": "rejected"
+  "finalStatus": "rejected",
+  "rejectedBy": 3
 }
 ```
 
-## 4. gRPC 정의(proto)
+## 4. gRPC 정의 (Proto)
 
 ```proto
 syntax = "proto3";
@@ -153,19 +157,21 @@ message ApprovalResultResponse {
 ## 5. 실행 방법
 
 ### 빌드
+
 ```
 ./gradlew build
 ```
 
 ### 실행
-각 서비스 디렉토리에서:
+
 ```
 ./gradlew bootRun
 ```
 
-## 6. 테스트 시나리오
+## 6. E2E 테스트 시나리오
 
 ### 승인 시나리오
+
 1. 직원 생성
 2. 결재 요청 생성
 3. 1단계 승인
@@ -173,19 +179,28 @@ message ApprovalResultResponse {
 5. WebSocket 알림 확인
 
 ### 반려 시나리오
-1단계 또는 2단계에서 반려 시 즉시 종료 및 알림 발생
 
-## 7. 디렉토리 구조
+요청 단계 중 하나라도 반려되면 즉시 종료 후 알림 발생
+
+## 7. test-noti.html 실행 방법
+
+Notification WebSocket 테스트를 위해 반드시 HTTP 서버로 실행해야 한다.
+
+### 7.1 테스트 실행
 
 ```
-학번/
-  employee-service/
-  approval-request-service/
-  approval-processing-service/
-  notification-service/
-  proto/
-    approval.proto
-  scripts/
-    init_mysql.sql
-  k8s/
+cd test
+python3 -m http.server 8000
 ```
+
+### 7.2 브라우저 접속
+
+```
+http://localhost:8000/test-noti.html
+```
+
+### 7.3 사용 방법
+
+1. Request ID 입력  
+2. Connect 클릭  
+3. 결재 승인/반려 시 Notification Service에서 전달되는 STOMP 메시지 수신
