@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: approval-processing-service
+  namespace: erp-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: approval-processing-service
+  template:
+    metadata:
+      labels:
+        app: approval-processing-service
+    spec:
+      containers:
+        - name: approval-processing-service
+          image: lifeisgenie/erp-approval-processing-service:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083   # REST API
+            - containerPort: 9090   # gRPC 서버
+          env:
+            # gRPC Approval Request Service 콜백
+            - name: APPROVAL_REQUEST_GRPC_HOST
+              value: "approval-request-service.erp-system.svc.cluster.local"
+            - name: APPROVAL_REQUEST_GRPC_PORT
+              value: "9091"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: approval-processing-service
+  namespace: erp-system
+spec:
+  selector:
+    app: approval-processing-service
+  type: NodePort
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+      nodePort: 32083
+    - name: grpc
+      port: 9090
+      targetPort: 9090
