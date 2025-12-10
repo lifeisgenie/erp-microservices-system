@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: approval-request-service
+  namespace: erp-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: approval-request-service
+  template:
+    metadata:
+      labels:
+        app: approval-request-service
+    spec:
+      containers:
+        - name: approval-request-service
+          image: lifeisgenie/erp-approval-request-service:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082   # REST API
+            - containerPort: 9091   # gRPC 서버
+          env:
+            # MongoDB
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://mongodb.erp-system.svc.cluster.local:27017/erp"
+
+            # Employee Service REST base URL
+            - name: EMPLOYEE_SERVICE_BASE_URL
+              value: "http://employee-service.erp-system.svc.cluster.local:8081"
+
+            # gRPC Processing Service
+            - name: APPROVAL_PROCESSING_GRPC_HOST
+              value: "approval-processing-service.erp-system.svc.cluster.local"
+            - name: APPROVAL_PROCESSING_GRPC_PORT
+              value: "9090"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: approval-request-service
+  namespace: erp-system
+spec:
+  selector:
+    app: approval-request-service
+  type: NodePort
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+      nodePort: 32082
+    - name: grpc
+      port: 9091
+      targetPort: 9091
