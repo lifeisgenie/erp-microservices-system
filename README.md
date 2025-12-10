@@ -6,7 +6,7 @@
 
 ## 1. 아키텍처 개요
 
-
+![Architecture](images/Architecture.png)
 
 ### 서비스 목록
 
