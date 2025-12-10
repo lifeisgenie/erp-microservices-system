@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Approval Notification Test</title>
+  <!-- SockJS 먼저 로드 -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <!-- STOMP는 cdnjs에서 2.3.3 버전 사용 (window.Stomp 제공) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+  <h1>Approval Notification Test</h1>
+
+  <label>Request ID:
+    <input id="requestId" value="1" />
+  </label>
+  <button onclick="connect()">Connect & Subscribe</button>
+
+  <h3>Log</h3>
+  <pre id="log" style="border:1px solid #ccc; padding:8px; max-height:300px; overflow:auto;"></pre>
+
+  <script>
+    let stompClient = null;
+
+    function log(msg) {
+      const pre = document.getElementById('log');
+      pre.textContent += msg + "\n";
+    }
+
+    function connect() {
+      const requestId = document.getElementById('requestId').value;
+
+      // 혹시라도 Stomp가 undefined면 바로 에러 로그 찍어보자
+      if (typeof Stomp === 'undefined') {
+        log('ERROR: Stomp is undefined. Check script loading.');
+        return;
+      }
+
+      const socket = new SockJS('http://localhost:8084/ws');
+      stompClient = Stomp.over(socket);
+
+      // 필요하면 디버그 끄기
+      stompClient.debug = null;
+
+      stompClient.connect({}, function () {
+        log('Connected to WebSocket.');
+
+        const dest = '/topic/approvals/' + requestId;
+        log('Subscribing to ' + dest);
+
+        stompClient.subscribe(dest, function (message) {
+          log('Received: ' + message.body);
+        });
+      }, function (error) {
+        log('Error: ' + error);
+      });
+    }
+  </script>
+</body>
+</html>
