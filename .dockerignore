@@ -1,0 +1,21 @@
+# Ignore Git repository
+.git/
+.gitignore
+
+# Gradle
+.gradle/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Generated Proto 
+**/generated/
