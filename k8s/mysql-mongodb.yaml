@@ -1,3 +1,4 @@
+# 실제 비밀번호는 커밋하지 않습니다. <...> 자리표시자를 바꾸거나 kubectl create secret으로 생성하세요.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -5,9 +6,9 @@ metadata:
   namespace: erp-system
 type: Opaque
 stringData:
-  mysql-root-password: <REMOVED_DB_ROOT_PASSWORD>
+  mysql-root-password: "<MYSQL_ROOT_PASSWORD>"
   mysql-user: erp
-  mysql-password: <REMOVED_DB_PASSWORD>
+  mysql-password: "<MYSQL_PASSWORD>"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
